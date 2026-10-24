@@ -1,10 +1,10 @@
 {
-  "id": "/",
+  "id": "./",
   "name": "Rechner L – Google Calculator & Verlauf",
   "short_name": "Rechner L",
   "description": "Rechner im Google Android-Design mit unbegrenztem Verlauf, deutscher Kommanotation und Export als CSV, TXT, PDF und JSON.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#121316",
@@ -13,7 +13,19 @@
   "categories": ["utilities", "productivity"],
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
