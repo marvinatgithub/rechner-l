@@ -1,0 +1,6 @@
+{
+  "name": "Rechner Pro – Google Calculator & Verlauf",
+  "description": "Rechner im Google Android-Design mit unbegrenztem Verlauf, deutscher Kommanotation und Export als CSV, TXT, PDF und JSON.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

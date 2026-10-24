@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E2026" />
+      <stop offset="100%" stop-color="#101114" />
+    </linearGradient>
+    <linearGradient id="accentBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#56CCF2" />
+      <stop offset="100%" stop-color="#2F80ED" />
+    </linearGradient>
+  </defs>
+
+  <!-- Full-bleed background for maskable and standard Android icons -->
+  <rect width="512" height="512" fill="#121316" />
+
+  <!-- Inner Squircle Card (Safe Zone for Pixel Launcher) -->
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#bgGrad)" stroke="#2F323B" stroke-width="3" />
+
+  <!-- 4-Circle Grid (Google Calculator Style) -->
+  <!-- Top Left: Minus (-) -->
+  <circle cx="178" cy="178" r="82" fill="#282B34" />
+  <rect x="138" y="168" width="80" height="20" rx="10" fill="#E3E2E6" />
+
+  <!-- Top Right: Multiply (×) -->
+  <circle cx="334" cy="178" r="82" fill="#282B34" />
+  <g transform="translate(334, 178) rotate(45)">
+    <rect x="-40" y="-10" width="80" height="20" rx="10" fill="#E3E2E6" />
+    <rect x="-10" y="-40" width="20" height="80" rx="10" fill="#E3E2E6" />
+  </g>
+
+  <!-- Bottom Left: Plus (+) -->
+  <circle cx="178" cy="334" r="82" fill="#282B34" />
+  <rect x="138" y="324" width="80" height="20" rx="10" fill="#E3E2E6" />
+  <rect x="168" y="294" width="20" height="80" rx="10" fill="#E3E2E6" />
+
+  <!-- Bottom Right: Accent Circle with the History Icon (Verlauf) -->
+  <circle cx="334" cy="334" r="82" fill="url(#accentBlue)" />
+  
+  <!-- History Symbol (scaled and centered from Lucide History icon) -->
+  <g transform="translate(334, 334) scale(4.2) translate(-12, -12)" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+    <path d="M12 7v5l4 2" />
+  </g>
+</svg>
