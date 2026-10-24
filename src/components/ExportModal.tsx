@@ -17,6 +17,7 @@ import {
   exportToPDF,
   exportToJSON,
   copyHistoryToClipboard,
+  sanitizeExpressionForExport,
 } from '../utils/exporter';
 import { formatNumber, splitTimestamp } from '../utils/formatter';
 
@@ -171,7 +172,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 Datum;Uhrzeit;Ausdruck;Ergebnis;Notiz{'\n'}
                 {history.slice(0, 2).map((item) => {
                   const { dateStr, timeStr } = splitTimestamp(item.timestamp, locale);
-                  return `${dateStr};${timeStr};"${item.expression}";"${formatNumber(item.result, locale)}";"${item.note || ''}"\n`;
+                  const cleanExpr = sanitizeExpressionForExport(item.expression);
+                  return `${dateStr};${timeStr};"${cleanExpr}";"${formatNumber(item.result, locale)}";"${item.note || ''}"\n`;
                 })}
                 {history.length > 2 && '...'}
               </>
@@ -179,7 +181,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             {selectedFormat === 'txt' && (
               <>
                 RECHNER L – BERECHNUNGSPROTOKOLL{'\n'}
-                {history.slice(0, 2).map((item) => `${item.expression} = ${formatNumber(item.result, locale)}${item.note ? ` (${item.note})` : ''}\n`)}
+                {history.slice(0, 2).map((item) => `${sanitizeExpressionForExport(item.expression)} = ${formatNumber(item.result, locale)}${item.note ? ` (${item.note})` : ''}\n`)}
                 {history.length > 2 && '...'}
               </>
             )}

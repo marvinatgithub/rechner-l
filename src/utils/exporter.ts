@@ -3,6 +3,39 @@ import { CalculationHistoryItem, NumberLocale } from '../types/calculator';
 import { formatNumber, splitTimestamp, formatTimestamp } from './formatter';
 
 /**
+ * Sanitizes math expressions for exports across different systems, PDF fonts, and Excel.
+ * Replaces Unicode mathematical minus (U+2212) and typographic dashes with standard ASCII hyphen (-)
+ * to prevent character corruption (e.g. U+2212 rendering as double quote '"' in standard PDF Helvetica).
+ * Also cleans irregular spaces.
+ */
+export function sanitizeExpressionForExport(rawExpr: string): string {
+  if (!rawExpr) return '';
+  return rawExpr
+    .replace(/[\u2212\u2013\u2014]/g, '-') // Replace U+2212 (math minus), en-dash, em-dash with ASCII '-'
+    .replace(/[\u00A0\u202F]/g, ' ')       // Replace non-breaking spaces with standard spaces
+    .replace(/\s+/g, ' ')                   // Normalize multiple spaces
+    .trim();
+}
+
+/**
+ * Generates a unique filename with date AND time down to the second
+ * (e.g. RechnerL_Verlauf_2026-10-24_14-05-32.csv)
+ * so multiple exports within the same minute never overwrite existing files.
+ */
+export function generateExportFilename(extension: string): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  const MM = pad(now.getMonth() + 1);
+  const dd = pad(now.getDate());
+  const hh = pad(now.getHours());
+  const mm = pad(now.getMinutes());
+  const ss = pad(now.getSeconds());
+
+  return `RechnerL_Verlauf_${yyyy}-${MM}-${dd}_${hh}-${mm}-${ss}.${extension}`;
+}
+
+/**
  * Triggers a browser file download of a string blob.
  */
 function downloadBlob(content: string, filename: string, mimeType: string) {
@@ -19,7 +52,7 @@ function downloadBlob(content: string, filename: string, mimeType: string) {
 
 /**
  * Generates German Excel-compatible CSV.
- * Uses semicolon ';' delimiter and UTF-8 BOM so German Excel parses decimals and umlauts correctly.
+ * Uses semicolon ';' delimiter, UTF-8 BOM, and standardized ASCII minus for clean Excel display.
  */
 export function exportToCSV(items: CalculationHistoryItem[], locale: NumberLocale = 'de-DE'): void {
   // UTF-8 BOM for Microsoft Excel compatibility
@@ -29,14 +62,15 @@ export function exportToCSV(items: CalculationHistoryItem[], locale: NumberLocal
   const headers = ['Datum', 'Uhrzeit', 'Ausdruck', 'Ergebnis', 'Notiz'];
   const rows = items.map((item) => {
     const { dateStr, timeStr } = splitTimestamp(item.timestamp, locale);
-    const expr = `"${item.expression.replace(/"/g, '""')}"`;
+    const cleanExpr = sanitizeExpressionForExport(item.expression);
+    const expr = `"${cleanExpr.replace(/"/g, '""')}"`;
     const res = `"${formatNumber(item.result, locale)}"`;
     const note = `"${(item.note || '').replace(/"/g, '""')}"`;
     return [dateStr, timeStr, expr, res, note].join(delimiter);
   });
 
   const csvContent = BOM + [headers.join(delimiter), ...rows].join('\r\n');
-  const filename = `RechnerL_Verlauf_${new Date().toISOString().slice(0, 10)}.csv`;
+  const filename = generateExportFilename('csv');
   downloadBlob(csvContent, filename, 'text/csv;charset=utf-8;');
 }
 
@@ -60,9 +94,10 @@ export function exportToTXT(items: CalculationHistoryItem[], locale: NumberLocal
     items.forEach((item, index) => {
       const timeStr = formatTimestamp(item.timestamp, locale);
       const resStr = formatNumber(item.result, locale);
+      const cleanExpr = sanitizeExpressionForExport(item.expression);
 
       text += `[#${items.length - index}] ${timeStr}\n`;
-      text += `  Rechnung : ${item.expression}\n`;
+      text += `  Rechnung : ${cleanExpr}\n`;
       text += `  Ergebnis : ${resStr}\n`;
       if (item.note) {
         text += `  Notiz    : ${item.note}\n`;
@@ -72,7 +107,7 @@ export function exportToTXT(items: CalculationHistoryItem[], locale: NumberLocal
   }
 
   text += `\nExportiert mit Rechner L (Google Calculator für Android)\n`;
-  const filename = `RechnerL_Verlauf_${new Date().toISOString().slice(0, 10)}.txt`;
+  const filename = generateExportFilename('txt');
   downloadBlob(text, filename, 'text/plain;charset=utf-8;');
 }
 
@@ -80,21 +115,27 @@ export function exportToTXT(items: CalculationHistoryItem[], locale: NumberLocal
  * Generates JSON export for backups and data interchange.
  */
 export function exportToJSON(items: CalculationHistoryItem[], locale: NumberLocale = 'de-DE'): void {
+  const sanitizedItems = items.map((item) => ({
+    ...item,
+    expression: sanitizeExpressionForExport(item.expression),
+  }));
+
   const payload = {
     app: 'Rechner L',
     exportedAt: new Date().toISOString(),
     locale,
     totalItems: items.length,
-    calculations: items,
+    calculations: sanitizedItems,
   };
 
   const jsonStr = JSON.stringify(payload, null, 2);
-  const filename = `RechnerL_Verlauf_${new Date().toISOString().slice(0, 10)}.json`;
+  const filename = generateExportFilename('json');
   downloadBlob(jsonStr, filename, 'application/json;charset=utf-8;');
 }
 
 /**
  * Generates a styled, printable PDF document using jsPDF.
+ * Uses sanitized ASCII minus so standard Helvetica font renders cleanly without quotes or corruption.
  */
 export function exportToPDF(items: CalculationHistoryItem[], locale: NumberLocale = 'de-DE'): void {
   const doc = new jsPDF({
@@ -190,8 +231,11 @@ export function exportToPDF(items: CalculationHistoryItem[], locale: NumberLocal
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(20, 20, 20);
-    // Truncate long expressions cleanly
-    const safeExpr = item.expression.length > 32 ? item.expression.substring(0, 30) + '...' : item.expression;
+
+    // Sanitize expression for PDF standard Helvetica font:
+    // Ensures minus signs never turn into double quotes or corrupted spacing
+    const cleanExpr = sanitizeExpressionForExport(item.expression);
+    const safeExpr = cleanExpr.length > 32 ? cleanExpr.substring(0, 30) + '...' : cleanExpr;
     doc.text(safeExpr, colX.expr, y + 1);
 
     doc.setTextColor(14, 116, 144); // Cyan / Blue for result
@@ -221,12 +265,12 @@ export function exportToPDF(items: CalculationHistoryItem[], locale: NumberLocal
     );
   }
 
-  const filename = `RechnerL_Verlauf_${new Date().toISOString().slice(0, 10)}.pdf`;
+  const filename = generateExportFilename('pdf');
   doc.save(filename);
 }
 
 /**
- * Copies plain text format to clipboard.
+ * Copies plain text format to clipboard with sanitized operators.
  */
 export async function copyHistoryToClipboard(
   items: CalculationHistoryItem[],
@@ -236,8 +280,9 @@ export async function copyHistoryToClipboard(
     const lines = items.map((item) => {
       const timeStr = formatTimestamp(item.timestamp, locale);
       const resStr = formatNumber(item.result, locale);
+      const cleanExpr = sanitizeExpressionForExport(item.expression);
       const noteStr = item.note ? ` (${item.note})` : '';
-      return `${timeStr}: ${item.expression} = ${resStr}${noteStr}`;
+      return `${timeStr}: ${cleanExpr} = ${resStr}${noteStr}`;
     });
     const content = lines.join('\n');
     await navigator.clipboard.writeText(content);
